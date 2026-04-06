@@ -81,7 +81,7 @@ app.post('/api/roast', upload.single('image'), async (req, res) => {
 });
 
 // All other GET requests not handled will return the React app
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
