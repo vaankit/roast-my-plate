@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Roast My Plate backend - AI food roaster",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,9 +12,9 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@google/genai": "^1.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "multer": "^2.1.1",
-    "ollama": "^0.6.3"
+    "multer": "^2.1.1"
   }
 }

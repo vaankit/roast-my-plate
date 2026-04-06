@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { Ollama } from 'ollama';
+import { GoogleGenAI } from '@google/genai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,7 +10,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3001;
-const ollama = new Ollama({ host: process.env.OLLAMA_HOST || 'http://127.0.0.1:11434' });
+
+// Initialize Gemini
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Setup express middlewares
 app.use(cors());
@@ -19,7 +21,7 @@ app.use(express.json());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-// Setup Multer to keep files in memory to pass straight to Ollama
+// Setup Multer to keep files in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -36,21 +38,30 @@ app.post('/api/roast', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'No image provided.' });
     }
 
-    // Ollama accepts base64 strings for images 
     const base64Image = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype || 'image/jpeg';
 
-    const response = await ollama.chat({
-      model: 'llama3.2-vision:latest',
-      messages: [{
-        role: 'user',
-        content: SYSTEM_PROMPT,
-        images: [base64Image]
-      }]
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              inlineData: {
+                data: base64Image,
+                mimeType: mimeType,
+              },
+            },
+            { text: SYSTEM_PROMPT },
+          ],
+        },
+      ],
     });
 
-    const reply = response.message.content;
+    const reply = response.text;
     let score = null;
-    
+
     // Attempt to extract the rating, e.g., "Rating: 3/10"
     const scoreMatch = reply.match(/Rating:\s*(\d+)/i);
     score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
@@ -65,7 +76,7 @@ app.post('/api/roast', upload.single('image'), async (req, res) => {
 
   } catch (error) {
     console.error('Error roasting plate:', error);
-    res.status(500).json({ error: 'Failed to process image with LLM.' });
+    res.status(500).json({ error: 'Failed to process image with AI. ' + (error.message || '') });
   }
 });
 
