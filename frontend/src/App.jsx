@@ -1,7 +1,17 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, Flame, Share2, Download, RotateCcw, Image as ImageIcon } from 'lucide-react';
+import { Upload, Flame, Share2, Download, RotateCcw, Sparkles, Zap } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import './index.css';
+
+const PERSONAS = [
+  { id: 'default', label: '🔥 Savage Critic', desc: 'No mercy. Pure destruction.' },
+  { id: 'gordon', label: '👨‍🍳 Gordon Ramsay', desc: "IT'S RAW!" },
+  { id: 'grandma', label: '👵 Passive-Aggressive Grandma', desc: 'Oh honey... bless your heart.' },
+  { id: 'nigel', label: '🎩 Uncle Nigel', desc: 'Dreadfully ghastly, darling.' },
+  { id: 'gen_z', label: '💀 Gen Z TikToker', desc: 'bestie no 😭' },
+  { id: 'shakespeare', label: '🎭 Shakespeare', desc: 'Forsooth, what tragedy is this?' },
+  { id: 'hype_man', label: '🎉 Hype Man', desc: 'YOOOO THIS IS FIRE!' },
+];
 
 function App() {
   const [file, setFile] = useState(null);
@@ -9,14 +19,18 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [activePersona, setActivePersona] = useState('default');
+  const [personaLoading, setPersonaLoading] = useState(false);
 
   const exportRef = useRef(null);
 
   const sassyTexts = [
-    "Sharpening the knives...",
-    "Consulting Gordon Ramsay's ghost...",
+    "Warming up the roast chambers...",
+    "Consulting the council of disappointed chefs...",
     "Preparing emotional damage...",
-    "Analyzing this so-called 'food'..."
+    "Analyzing this so-called 'food'...",
+    "Your meal is being judged. Harshly.",
+    "Summoning culinary destruction...",
   ];
   const [sassyIndex, setSassyIndex] = useState(0);
 
@@ -44,7 +58,7 @@ function App() {
 
   const handleFileSelection = (selectedFile) => {
     if (!selectedFile.type.startsWith('image/')) {
-      alert('Please upload a valid image file!');
+      alert('Nice try. That\'s not food. That\'s not even an image.');
       return;
     }
     setFile(selectedFile);
@@ -54,19 +68,26 @@ function App() {
     };
     reader.readAsDataURL(selectedFile);
     setResult(null);
+    setActivePersona('default');
   };
 
-  const handleRoast = async () => {
+  const performRoast = async (persona = 'default') => {
     if (!file) return;
 
-    setLoading(true);
-    // Cycle sassy text playfully while loading
+    const isPersonaSwitch = result !== null;
+    if (isPersonaSwitch) {
+      setPersonaLoading(true);
+    } else {
+      setLoading(true);
+    }
+    
     const interval = setInterval(() => {
       setSassyIndex(prev => (prev + 1) % sassyTexts.length);
-    }, 2500);
+    }, 2000);
 
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('persona', persona);
 
     try {
       const endpoint = import.meta.env.DEV ? 'http://localhost:3001/api/roast' : '/api/roast';
@@ -78,22 +99,32 @@ function App() {
       
       if (data.success) {
         setResult(data.data);
+        setActivePersona(persona);
       } else {
-        alert("Error: " + data.error);
+        alert("The roasting machine broke: " + data.error);
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to connect to the roaster backend. Is the server running?");
+      alert("The roast server ghosted us. Try again in a sec.");
     } finally {
       clearInterval(interval);
       setLoading(false);
+      setPersonaLoading(false);
     }
+  };
+
+  const handleRoast = () => performRoast('default');
+
+  const handlePersonaSwitch = (personaId) => {
+    if (personaId === activePersona) return;
+    performRoast(personaId);
   };
 
   const resetAll = () => {
     setFile(null);
     setPreviewURL(null);
     setResult(null);
+    setActivePersona('default');
   };
 
   const handleDownloadImage = async () => {
@@ -106,7 +137,7 @@ function App() {
       link.click();
     } catch (err) {
       console.error('Failed to export image', err);
-      alert("Failed to create shareable image.");
+      alert("Screenshot machine broke. Classic.");
     }
   };
 
@@ -114,24 +145,41 @@ function App() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Roast My Plate',
-          text: `My meal got absolutely roasted: "${result.text}" \nScore: ${result.score}/10. Try it yourself!`,
+          title: 'Roast My Plate 🔥',
+          text: `My meal got absolutely wrecked: "${result.text}" \nDamage Level: ${result.score}/10. Your food is next → `,
           url: window.location.href,
         });
       } catch (err) {
         console.error("Native share failed", err);
       }
     } else {
-      // Fallback
-      alert("Native sharing is not supported on your browser. Please use the Download option instead!");
+      navigator.clipboard.writeText(
+        `My meal got roasted: "${result.text}" — Score: ${result.score}/10. Try it: ${window.location.href}`
+      );
+      alert("Copied to clipboard. Go spread the destruction.");
     }
   };
 
+  const personaLabel = PERSONAS.find(p => p.id === activePersona)?.label || '🔥 Savage Critic';
+
   return (
     <div className="app-container">
+      {/* Animated background grid */}
+      <div className="bg-grid" />
+      <div className="bg-glow bg-glow-1" />
+      <div className="bg-glow bg-glow-2" />
+
       <header>
-        <h1>Roast My Plate <Flame color="#ff3366" size={40} style={{ display: 'inline', verticalAlign: 'bottom', animation: 'pulse 2s infinite' }} /></h1>
-        <p className="subtitle">Upload your meal. Get emotionally destroyed. Share with friends.</p>
+        <div className="logo-mark">
+          <Flame className="logo-flame" />
+        </div>
+        <h1>ROAST MY PLATE</h1>
+        <p className="subtitle">
+          Upload your <span className="text-accent">culinary disaster</span>. Get emotionally destroyed. Share the trauma.
+        </p>
+        <div className="tagline">
+          <Zap size={14} /> No feelings were considered in the making of this app.
+        </div>
       </header>
 
       {!loading && !result && (
@@ -149,20 +197,28 @@ function App() {
                 accept="image/*" 
                 onChange={handleFileChange} 
                 style={{ display: 'none' }} 
+                id="file-upload"
               />
-              <Upload className="upload-icon" />
-              <h2>Drag & Drop your masterpiece</h2>
-              <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>Or click to browse your files</p>
+              <div className="upload-icon-wrap">
+                <Upload className="upload-icon" />
+              </div>
+              <h2>Drop your "masterpiece" here</h2>
+              <p className="upload-sub">Or click to select from your camera roll of regrets</p>
+              <div className="upload-formats">JPG, PNG, WEBP — we accept all forms of disappointment</div>
             </label>
           ) : (
             <div className="preview-container">
-              <img src={previewURL} alt="Your food" className="preview-image" />
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button className="btn btn-secondary" onClick={resetAll}>
-                  <RotateCcw size={20} /> Choose Another
+              <div className="preview-image-wrap">
+                <img src={previewURL} alt="Your questionable food" className="preview-image" />
+                <div className="preview-badge">EVIDENCE</div>
+              </div>
+              <p className="preview-warning">⚠️ By clicking Roast, you agree that your feelings are not our responsibility.</p>
+              <div className="preview-actions">
+                <button className="btn btn-ghost" onClick={resetAll}>
+                  <RotateCcw size={18} /> Chicken Out
                 </button>
-                <button className="btn" onClick={handleRoast}>
-                  <Flame size={20} /> Roast Me!
+                <button className="btn btn-primary btn-glow" onClick={handleRoast}>
+                  <Flame size={18} /> ROAST THIS
                 </button>
               </div>
             </div>
@@ -172,50 +228,91 @@ function App() {
 
       {loading && (
         <div className="loader-container">
-          <div className="loader"></div>
+          <div className="loader-ring">
+            <div className="loader-ring-inner" />
+          </div>
           <p className="sassy-text">{sassyTexts[sassyIndex]}</p>
+          <div className="loader-subtext">This might hurt. Emotionally.</div>
         </div>
       )}
 
       {result && (
-        <main>
+        <main className="result-main">
           <div className="result-card">
             
-            {/* The exact container we convert to an image download */}
+            {/* Exportable area */}
             <div className="export-wrap" ref={exportRef}>
-              {result.score !== null && (
-                <div className="roast-score">
-                  {result.score}<span style={{fontSize: '1rem', color: 'var(--accent-color)'}}>/10</span>
-                </div>
-              )}
+              <div className="result-header">
+                <div className="result-persona-tag">{personaLabel}</div>
+                {result.score !== null && (
+                  <div className="roast-score">
+                    <span className="score-number">{result.score}</span>
+                    <span className="score-label">/10</span>
+                  </div>
+                )}
+              </div>
               
-              <img src={previewURL} alt="Roasted food" className="preview-image" style={{maxHeight: '300px', width: '100%', objectFit: 'cover', marginTop: result.score !== null ? '1rem' : '0'}} />
+              <img 
+                src={previewURL} 
+                alt="Roasted food" 
+                className="result-image" 
+              />
               
               <div className="roast-text">
-                "{result.text}"
+                <Sparkles size={16} className="quote-icon" />
+                {result.text}
               </div>
 
               <div className="branding">
-                <Flame size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle', color: 'var(--accent-color)' }} />
-                ROAST MY PLATE
+                <Flame size={12} />
+                <span>ROAST MY PLATE</span>
               </div>
             </div>
 
-            {/* Action Buttons (Not included in export) */}
+            {/* Persona Capsules */}
+            <div className="persona-section">
+              <div className="persona-label">Switch Roaster Persona</div>
+              <div className="persona-grid">
+                {PERSONAS.map(p => (
+                  <button 
+                    key={p.id}
+                    className={`persona-capsule ${activePersona === p.id ? 'active' : ''} ${personaLoading ? 'disabled' : ''}`}
+                    onClick={() => handlePersonaSwitch(p.id)}
+                    disabled={personaLoading}
+                    title={p.desc}
+                  >
+                    <span className="persona-capsule-label">{p.label}</span>
+                    <span className="persona-capsule-desc">{p.desc}</span>
+                  </button>
+                ))}
+              </div>
+              {personaLoading && (
+                <div className="persona-loading">
+                  <div className="persona-loading-dot" />
+                  <span>Channeling new energy...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
             <div className="actions">
-              <button className="btn btn-secondary" onClick={resetAll}>
-                 <RotateCcw size={20} /> Try Again
+              <button className="btn btn-ghost" onClick={resetAll}>
+                <RotateCcw size={18} /> New Victim
               </button>
-              <button className="btn btn-secondary" onClick={handleShare} title="Share Text">
-                 <Share2 size={20} /> Share
+              <button className="btn btn-outline" onClick={handleShare}>
+                <Share2 size={18} /> Share Pain
               </button>
-              <button className="btn" onClick={handleDownloadImage} title="Download Card">
-                 <Download size={20} /> Get Card
+              <button className="btn btn-primary" onClick={handleDownloadImage}>
+                <Download size={18} /> Get Card
               </button>
             </div>
           </div>
         </main>
       )}
+
+      <footer>
+        <p>Built with zero empathy and questionable taste.</p>
+      </footer>
     </div>
   );
 }
