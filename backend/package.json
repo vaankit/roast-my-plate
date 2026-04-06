@@ -12,9 +12,9 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@google/genai": "^1.48.0",
     "cors": "^2.8.6",
     "express": "^5.1.0",
-    "multer": "^2.1.1",
-    "ollama": "^0.5.16"
+    "multer": "^2.1.1"
   }
 }
